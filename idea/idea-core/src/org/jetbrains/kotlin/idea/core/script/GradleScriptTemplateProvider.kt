@@ -31,8 +31,9 @@ import org.jetbrains.plugins.gradle.settings.GradleExecutionSettings
 import java.io.File
 import java.net.URLClassLoader
 import java.util.*
+import kotlin.script.dependencies.ScriptDependencies
 
-class GradleScriptTemplatesProvider(project: Project): ScriptTemplatesProvider {
+class GradleScriptTemplatesProvider(project: Project) : ScriptTemplatesProvider {
 
     private val gradleExeSettings: GradleExecutionSettings? by lazy {
         try {
@@ -62,7 +63,7 @@ class GradleScriptTemplatesProvider(project: Project): ScriptTemplatesProvider {
 
     private sealed class TemplateDataOrError {
         class Data(val templateClassNames: Iterable<String>,
-                   val dependenciesClasspath: Iterable<File>,
+                   val dependencies: ScriptDependencies,
                    val scriptDefinitions: List<KotlinScriptDefinition>) : TemplateDataOrError()
         class Error(val message: String) : TemplateDataOrError()
     }
@@ -83,7 +84,7 @@ class GradleScriptTemplatesProvider(project: Project): ScriptTemplatesProvider {
             try {
                 val cl = loader.loadClass(template)
                 val def = KotlinScriptDefinitionFromAnnotatedTemplate(cl.kotlin, resolver, filePattern, environment)
-                return@lazy TemplateDataOrError.Data(listOf(template), cp.asIterable(), listOf(def))
+                return@lazy TemplateDataOrError.Data(listOf(template), ScriptDependencies(classpath = cp.asList()), listOf(def))
             }
             catch (e: ClassNotFoundException) {}
             catch (e: NoClassDefFoundError) {}
@@ -92,13 +93,13 @@ class GradleScriptTemplatesProvider(project: Project): ScriptTemplatesProvider {
         return@lazy TemplateDataOrError.Error("Unable to find a suitable template in the Gradle libraries directory $gradleLibDir")
     }
 
-    override val templateClassNames: Iterable<String> get() = when(templatesData) {
+    override val templateClassNames: Iterable<String> get() = when (templatesData) {
         is GradleScriptTemplatesProvider.TemplateDataOrError.Data -> (templatesData as TemplateDataOrError.Data).templateClassNames
         is GradleScriptTemplatesProvider.TemplateDataOrError.Error -> throw IllegalStateException((templatesData as TemplateDataOrError.Error).message)
     }
 
-    override val dependenciesClasspath: Iterable<String> get() = when(templatesData) {
-        is GradleScriptTemplatesProvider.TemplateDataOrError.Data -> (templatesData as TemplateDataOrError.Data).dependenciesClasspath.map { it.canonicalPath }
+    override val dependencies: ScriptDependencies get() = when (templatesData) {
+        is GradleScriptTemplatesProvider.TemplateDataOrError.Data -> (templatesData as TemplateDataOrError.Data).dependencies
         is GradleScriptTemplatesProvider.TemplateDataOrError.Error -> throw IllegalStateException((templatesData as TemplateDataOrError.Error).message)
     }
 
@@ -113,7 +114,7 @@ class GradleScriptTemplatesProvider(project: Project): ScriptTemplatesProvider {
                 "getScriptSectionTokens" to ::topLevelSectionCodeTextTokens)
     }
 
-    override val scriptDefinitions: List<KotlinScriptDefinition>? get() = when(templatesData) {
+    override val scriptDefinitions: List<KotlinScriptDefinition>? get() = when (templatesData) {
         is GradleScriptTemplatesProvider.TemplateDataOrError.Data -> (templatesData as TemplateDataOrError.Data).scriptDefinitions
         is GradleScriptTemplatesProvider.TemplateDataOrError.Error -> throw IllegalStateException((templatesData as TemplateDataOrError.Error).message)
     }

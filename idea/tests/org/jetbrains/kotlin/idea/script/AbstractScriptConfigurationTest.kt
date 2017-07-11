@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.utils.PathUtil
 import org.junit.Assert
 import java.io.File
 import java.util.regex.Pattern
+import kotlin.script.dependencies.ScriptDependencies
 
 
 abstract class AbstractScriptConfigurationHighlightingTest : AbstractScriptConfigurationTest() {
@@ -143,5 +144,7 @@ class TestScriptTemplateProvider(
     override val id = "Test"
     override val isValid = true
     override val templateClassNames = listOf("custom.scriptDefinition.Template")
-    override val dependenciesClasspath = listOf(compiledTemplateDir.canonicalPath)
+    override val dependencies = ScriptDependencies(
+            classpath = listOf(compiledTemplateDir)
+    )
 }

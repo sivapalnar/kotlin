@@ -18,9 +18,9 @@ package org.jetbrains.kotlin.idea.script
 
 import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.idea.compiler.configuration.KotlinCompilerSettings
-import org.jetbrains.kotlin.idea.core.script.topLevelSectionCodeTextTokens
 import org.jetbrains.kotlin.script.ScriptTemplatesProvider
 import java.io.File
+import kotlin.script.dependencies.ScriptDependencies
 
 class ScriptTemplatesFromCompilerSettingsProvider(project: Project): ScriptTemplatesProvider
 {
@@ -30,7 +30,10 @@ class ScriptTemplatesFromCompilerSettingsProvider(project: Project): ScriptTempl
     override val isValid: Boolean = kotlinSettings.scriptTemplates.isNotBlank()
 
     override val templateClassNames: Iterable<String> get() = kotlinSettings.scriptTemplates.split(',', ' ')
-    override val dependenciesClasspath: Iterable<String> get() = kotlinSettings.scriptTemplatesClasspath.split(File.pathSeparator)
+    override val dependencies get() = ScriptDependencies(
+            classpath = kotlinSettings.scriptTemplatesClasspath.split(File.pathSeparator).map(::File)
+    )
+
     override val environment: Map<String, Any?>? by lazy { mapOf(
             "projectRoot" to (project.basePath ?: project.baseDir.canonicalPath)?.let(::File))
     }

@@ -23,6 +23,7 @@ import com.intellij.openapi.project.Project
 import java.io.File
 import java.net.URLClassLoader
 import kotlin.script.dependencies.DependenciesResolver
+import kotlin.script.dependencies.ScriptDependencies
 
 interface ScriptTemplatesProvider {
 
@@ -42,7 +43,7 @@ interface ScriptTemplatesProvider {
 
     val filePattern: String? get() = null
 
-    val dependenciesClasspath: Iterable<String>
+    val dependencies: ScriptDependencies
 
     val environment: Map<String, Any?>?
 
@@ -65,9 +66,9 @@ fun makeScriptDefsFromTemplatesProviders(providers: Iterable<ScriptTemplatesProv
                                          errorsHandler: ((ScriptTemplatesProvider, Throwable) -> Unit) = { _, ex -> throw ex }
 ): List<KotlinScriptDefinition> = providers.flatMap { provider ->
     try {
-        LOG.info("[kts] loading script definitions ${provider.templateClassNames} using cp: ${provider.dependenciesClasspath.joinToString(File.pathSeparator)}")
+        LOG.info("[kts] loading script definitions ${provider.templateClassNames} using cp: ${provider.dependencies.classpath.joinToString(File.pathSeparator)}")
         provider.scriptDefinitions ?: run {
-            val loader = URLClassLoader(provider.dependenciesClasspath.map { File(it).toURI().toURL() }.toTypedArray(), ScriptTemplatesProvider::class.java.classLoader)
+            val loader = URLClassLoader(provider.dependencies.classpath.map { it.toURI().toURL() }.toTypedArray(), ScriptTemplatesProvider::class.java.classLoader)
             provider.templateClassNames.map {
                 KotlinScriptDefinitionFromAnnotatedTemplate(loader.loadClass(it).kotlin, provider.resolver, provider.filePattern, provider.environment)
             }
