@@ -45,6 +45,13 @@ interface ScriptTemplatesProvider {
 
     val dependencies: ScriptDependencies
 
+    /*
+     * Allows to specify additional jar needed for DependenciesResolver (and not script template).
+     * Script template dependencies naturally become (part of) dependencies of the script which is not always desired for resolver dependencies.
+     * i.e. gradle resolver may depend on kotlin-compiler but 'built.gradle.kts' files should not.
+     */
+    val additionalResolverClasspath: List<File> get() = emptyList()
+
     val environment: Map<String, Any?>?
 
     // for caching already loaded definitions, when needed
@@ -66,9 +73,10 @@ fun makeScriptDefsFromTemplatesProviders(providers: Iterable<ScriptTemplatesProv
                                          errorsHandler: ((ScriptTemplatesProvider, Throwable) -> Unit) = { _, ex -> throw ex }
 ): List<KotlinScriptDefinition> = providers.flatMap { provider ->
     try {
-        LOG.info("[kts] loading script definitions ${provider.templateClassNames} using cp: ${provider.dependencies.classpath.joinToString(File.pathSeparator)}")
+        val classpath = provider.dependencies.classpath + provider.additionalResolverClasspath
+        LOG.info("[kts] loading script definitions ${provider.templateClassNames} using cp: ${classpath.joinToString(File.pathSeparator)}")
         provider.scriptDefinitions ?: run {
-            val loader = URLClassLoader(provider.dependencies.classpath.map { it.toURI().toURL() }.toTypedArray(), ScriptTemplatesProvider::class.java.classLoader)
+            val loader = URLClassLoader(classpath.map { it.toURI().toURL() }.toTypedArray(), ScriptTemplatesProvider::class.java.classLoader)
             provider.templateClassNames.map {
                 KotlinScriptDefinitionFromAnnotatedTemplate(loader.loadClass(it).kotlin, provider.resolver, provider.filePattern, provider.environment)
             }
