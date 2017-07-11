@@ -18013,6 +18013,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)
     public static class SyntheticAccessors extends AbstractIrBlackBoxCodegenTest {
+        @TestMetadata("accessorForCompanionObject.kt")
+        public void testAccessorForCompanionObject() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/syntheticAccessors/accessorForCompanionObject.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("accessorForProtected.kt")
         public void testAccessorForProtected() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/syntheticAccessors/accessorForProtected.kt");
