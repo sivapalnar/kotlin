@@ -123,8 +123,6 @@ class GradleScriptTemplatesProvider(project: Project) : ScriptTemplatesProvider 
         private val templates2DependenciesSelectors = listOf(
                 "org.gradle.kotlin.dsl.KotlinBuildScript" to Regex("^gradle-(?:kotlin-dsl|core).*\\.jar\$"),
                 "org.gradle.script.lang.kotlin.KotlinBuildScript" to Regex("^gradle-(?:script-kotlin|core).*\\.jar\$"))
-        // TODO_R: merge
-        private val depLibsPrefixes = listOf("gradle-kotlin-dsl", "gradle-script-kotlin", "gradle-core", "kotlin-compiler-")
     }
 }
 
