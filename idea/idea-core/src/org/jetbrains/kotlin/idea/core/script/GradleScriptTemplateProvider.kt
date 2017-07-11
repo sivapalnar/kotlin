@@ -57,17 +57,19 @@ abstract class AbstractGradleScriptTemplatesProvider(
         } ?: emptyList()
     }
 
+    internal val gradleLibDir: File by lazy {
+        val gradleHome = gradleExeSettings?.gradleHome ?: error("Unable to get Gradle home directory")
+
+        File(gradleHome, "lib").let {
+            it.takeIf { it.exists() && it.isDirectory } ?: error("Invalid Gradle libraries directory $it")
+        }
+    }
+
     override val isValid: Boolean get() = true
 
     override val templateClassNames get() = listOf(templateClass)
 
     override val dependencies: ScriptDependencies get() {
-        val gradleHome = gradleExeSettings?.gradleHome ?: error("Unable to get Gradle home directory")
-
-        val gradleLibDir = File(gradleHome, "lib").let {
-            it.takeIf { it.exists() && it.isDirectory } ?: error("Invalid Gradle libraries directory $it")
-        }
-
         val cp = gradleLibDir.listFiles { it -> /* an inference problem without explicit 'it', TODO: remove when fixed */
             dependencySelector.matches(it.name)
         }.takeIf { it.isNotEmpty() } ?: error("Missing jars in gradle directory")
@@ -83,7 +85,8 @@ abstract class AbstractGradleScriptTemplatesProvider(
                 GradleExecutionHelper().execute(project.basePath!!, null) { action(it) } },
                 "gradleJavaHome" to gradleExeSettings?.javaHome,
                 "gradleJvmOptions" to gradleJvmOptions,
-                "getScriptSectionTokens" to ::topLevelSectionCodeTextTokens)
+                "getScriptSectionTokens" to ::topLevelSectionCodeTextTokens
+        )
     }
 }
 
@@ -92,7 +95,12 @@ class GradleKotlinDSLTemplateProvider(project: Project) : AbstractGradleScriptTe
         "Gradle Kotlin DSL",
         "org.gradle.kotlin.dsl.KotlinBuildScript",
         Regex("^gradle-(?:kotlin-dsl|core).*\\.jar\$")
-)
+) {
+    override val additionalResolverClasspath: List<File> =
+            // additionally need compiler jar to load gradle resolver
+            gradleLibDir.listFiles { file -> file.name.startsWith("kotlin-compiler-embeddable") }
+                    .firstOrNull()?.let(::listOf).orEmpty()
+}
 
 class LegacyGradleScriptKotlinTemplateProvider(project: Project) : AbstractGradleScriptTemplatesProvider(
         project,
